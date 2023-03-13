@@ -8,6 +8,9 @@ output:
 
 ```{r setup, include=FALSE}
 library(flexdashboard)
+library(ggplot2)
+library(tidyverse)
+library(plotly)
 ```
 
 Column {data-width=650}
