@@ -54,7 +54,7 @@ DrakeCaviar <-
   bind_rows(RapCaviar |> mutate(Category = "Hip hop Charts"), Popchart |> mutate(Category = "Pop Charts"))
 
 
-Drakegg <- DrakeCaviar |>
+DrakeCaviar |>
   mutate(
     sections =
       map(

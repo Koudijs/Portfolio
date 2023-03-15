@@ -1,0 +1,72 @@
+---
+title: "Storyboard Page"
+output: flexdashboard::flex_dashboard
+---
+
+```{r setup, include=FALSE}
+library(flexdashboard)
+library(ggplot2)
+library(plotly)
+library(dplyr)
+library(spotifyr)
+library(compmus)
+library(tidyverse)
+
+```
+
+Analysis {.storyboard}
+=========================================
+
+### Started from the bottom 
+```{r}
+
+
+Started <-
+  get_tidy_audio_analysis("3dgQqOiQ9fCKVhNOedd2lf") |> # Change URI.
+  compmus_align(bars, segments) |>                     # Change `bars`
+  select(bars) |>                                      #   in all three
+  unnest(bars) |>                                      #   of these lines.
+  mutate(
+    pitches =
+      map(segments,
+          compmus_summarise, pitches,
+          method = "rms", norm = "euclidean"              # Change summary & norm.
+      )
+  ) |>
+  mutate(
+    timbre =
+      map(segments,
+          compmus_summarise, timbre,
+          method = "rms", norm = "euclidean"              # Change summary & norm.
+      )
+  )
+
+Started|>
+  compmus_gather_timbre() |>
+  ggplot(
+    aes(
+      x = start + duration / 2,
+      width = duration,
+      y = basis,
+      fill = value
+    )
+  ) +
+  geom_tile() + ggtitle("Started from the bottom Cepstrogram") +
+  labs(x = "Time (s)", y = NULL, fill = "Magnitude") +
+  scale_fill_viridis_c() +                              
+  theme_classic()
+
+
+
+```
+
+### Frame 2
+
+```{r}
+```
+
+Details
+=========================================
+
+Column
+-----------------------------------------
