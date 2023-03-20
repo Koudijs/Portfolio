@@ -17,8 +17,35 @@ library(dplyr)
 library(spotifyr)
 library(compmus)
 library(tidyverse)
+source("helper.R")
 
 ```
+
+Tempo {.storyboard}
+=====================================
+
+### SICKO MODE
+
+```{r}
+Sicko <- get_tidy_audio_analysis("2xLMifQCjDGFmkHkpNLD9h")
+
+Sicko |>
+  tempogram(window_size = 8, hop_size = 1, cyclic = FALSE) |>
+  ggplot(aes(x = time, y = bpm, fill = power)) +
+  geom_raster() +
+  scale_fill_viridis_c(guide = "none") +
+  labs(x = "Time (s)", y = "Tempo (BPM)") +
+  theme_classic()
+
+```
+
+***
+
+SICKO MODE is a songs by drake and Travis Scot. This is a great example of a song of drake in collaboration with a die-hard Hip-Hop artist. One of the characteristics of Hip-Hop music is the clear beat. In the graph this is clearly visible. There is a clear line at just around 300 BPM. It is so clear that there only is a barely visible line at the lower tempo octave (around 150 BPM). The special thing about this song is that it is a mix of three different Hip-Hop songs. One of the criteria of mixing songs together, is that the beat is the same. This is clearly the case, but we can see the periods in the song where one song slows over into the other. This is seen at 110 and 170 seconds. Where at 110 the tempo is increased by a little, to eventually mix in the new song with again the clear beat. 
+
+At the beginning of the song the tempo estimation is having a hard time, this is due to only being vocals where the onset is not that easy to find. The estimation varies a little but eventually the beat kicks in and settles at 300BPM. 
+
+(For my peers. The BPM is estimated at 300BPM. That seems a little high to me. If you listen to the song there is a high-hat played at what i think is 16th notes. Is this the reason that it settles at 300?  )
 
 Hip-hop or pop {.storyboard}
 =====================================
@@ -740,3 +767,12 @@ Started|>
 
 
 ```
+
+Introduction{.storyboard}
+===============================================
+
+### Is Drake the greatest Hip-Hop artist? Or just another Pop creator? 
+
+Drake claims he is a creator of Hip-Hop music. He is a widely known artist who scored some great hits in his career. Some people might say that, especially some of his most popular songs, are more towards the Pop genre. They say that these mainstream songs are not worth the title of Hip-Hop. When I found this opinion I started looking at some of his Top Songs. When listening to the songs, I get where the opinion comes from. This is why I would like to find out if the Top Scoring songs actually are more towards the Pop genre. 
+
+For the Portfolio I have created a playlist with about 25 of the best scoring Drake songs. A note is that some of the songs are in collaboration with another artist that might be more accepted in the Hip-Hop scene. When this is the case, it will be addressed in project. Furthermore I have found the billboard Hip-Hop top 200, and the Pop chart from ….. In this portfolio we will analyse some structures to see if Drake is a Hip-Hop or Pop artist. 

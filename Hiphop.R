@@ -2,31 +2,39 @@ library(tidyverse)
 library(spotifyr)
 library(compmus)
 
-Topsongsdrake <-
+DrakeTop <-
   get_playlist_audio_features(
-    "thesoundsofspotify",
+    "",
     "7dl2AkcjDVWdVxwCH2QAWV"
   ) |>
-  slice(1:30) |>
+  slice(1:25) |>
   add_audio_analysis()
-
-Rapcaviar <-
+RapCaviar <-
   get_playlist_audio_features(
-    "thesoundsofspotify",
+    "",
     "37i9dQZF1DX0XUsuxWHRQd"
   ) |>
-  slice(1:30) |>
+  slice(1:25) |>
   add_audio_analysis()
-CompareHiphop <-
-  Topsongsdrake |>
-  mutate(genre = "Topsongsdrake") |>
-  bind_rows(bigband |> mutate(genre = "Rapcaviar"))
+Popchart <-
+  get_playlist_audio_features(
+    "",
+    "1eKpGEx2H4cB6DBs34obeR"
+  ) |>
+  slice(1:25) |>
+  add_audio_analysis()
 
-CompareHiphop |>
+DrakeCaviar <-
+  DrakeTop |>
+  mutate(Category = "Drake Top Songs") |>
+  bind_rows(RapCaviar |> mutate(Category = "Hip hop Charts"), Popchart |> mutate(Category = "Pop Charts"))
+
+
+DrakeCaviar |>
   mutate(
     sections =
       map(
-        sections,                                    # sections or segments
+        segments,                                    # sections or segments
         summarise_at,
         vars(tempo, loudness, duration),             # features of interest
         list(section_mean = mean, section_sd = sd)   # aggregation functions
@@ -37,7 +45,7 @@ CompareHiphop |>
     aes(
       x = tempo,
       y = tempo_section_sd,
-      colour = genre,
+      colour = Category,
       alpha = loudness
     )
   ) +
@@ -48,8 +56,7 @@ CompareHiphop |>
   labs(
     x = "Mean Tempo (bpm)",
     y = "SD Tempo",
-    colour = "Genre",
+    colour = "Category",
     size = "Duration (min)",
     alpha = "Volume (dBFS)"
   )
-
