@@ -18,8 +18,96 @@ library(spotifyr)
 library(compmus)
 library(tidyverse)
 source("helper.R")
+library(tidymodels)
+library(ggdendro)
+library(heatmaply)
 
 ```
+
+
+Clustering{.storyboard}
+======================================
+### Dendrogram
+```{r}
+
+  Topsongsdrake_cluster <- get_playlist_audio_features("", "7dl2AkcjDVWdVxwCH2QAWV") |>
+  add_audio_analysis() |>
+  mutate(
+    segments = map2(segments, key, compmus_c_transpose),
+    pitches =
+      map(segments,
+          compmus_summarise, pitches,
+          method = "mean", norm = "manhattan"
+      ),
+    timbre =
+      map(
+        segments,
+        compmus_summarise, timbre,
+        method = "mean"
+      )
+  ) |>
+  mutate(pitches = map(pitches, compmus_normalise, "clr")) |>
+  mutate_at(vars(pitches, timbre), map, bind_rows) |>
+  unnest(cols = c(pitches, timbre))
+
+Topsongs_juice <-
+  recipe(
+    track.name ~
+      danceability +
+      energy +
+      loudness +
+      speechiness +
+      acousticness +
+      instrumentalness +
+      liveness +
+      valence +
+      tempo +
+      duration +
+      C + `C#|Db` + D + `D#|Eb` +
+      E + `F` + `F#|Gb` + G +
+      `G#|Ab` + A + `A#|Bb` + B +
+      c01 + c02 + c03 + c04 + c05 + c06 +
+      c07 + c08 + c09 + c10 + c11 + c12,
+    data = Topsongsdrake_cluster
+  ) |>
+  step_center(all_predictors()) |>
+  step_scale(all_predictors()) |> 
+  # step_range(all_predictors()) |> 
+  prep(Topsongsdrake_cluster |> mutate(track.name = str_trunc(track.name, 20))) |>
+  juice() |>
+  column_to_rownames("track.name")
+
+Topsongs_dist <- dist(Topsongs_juice, method = "euclidean")
+
+Topsongs_dist |> 
+  hclust(method = "average") |> # Try single, average, and complete.
+  dendro_data() |>
+  ggdendrogram()
+
+```
+
+
+***
+
+This is a dendrogram, a graph that creates clusters of songs based on their features. On the next page we will find a Heatmap for what features have been considered in the dendrogram. Clusters may be counted like every new branch. As you can see, the first cluster formed is only the song Passionfruit vs all the other songs in the playlist. This is interesting because as we have seen in this entire Portfolio, Passionfruit is one of the most popular drake songs ever made. On the next page we can evaluate the clusters a bit more with the created heatmap. 
+
+This dendrogram used the average linkage cluster method which is a safe middle between the single linkage and complete linkage methods. Even with the average method, the clusters are not that clear. They are really small. The few balanced branches are found starting from the song 'Controlla' in the graph. We will also analyze this in the Heatmap on the next page. 
+
+### Heatmap 
+```{r}
+heatmaply(
+  Topsongs_juice,
+  hclustfun = hclust,
+  hclust_method = "average",  # Change for single, average, or complete linkage.
+  dist_method = "euclidean"
+)
+
+```
+
+***
+This is the heatmap of the clusters found by the clustering method. As we can see, the clusters are really not that obvious. Only one single outlier really pops out. Ones again it is our beloved Passionfruit. This seems to be the only song that scores really high on instrumentalness. This seems reasonable when we listen to the song, it really differs from the "basic" Hip-Hop recipy of clear Bass and Snare. 
+
+We can see that the branch from "Circo Loco" up until "No Guidance" is formed by the colomn C and B. And that the final two rows might be based on Energy. But i do not think this gives that much information about my Corpus. Why? that is what i need to still find out. 
 
 Tempo {.storyboard}
 =====================================
