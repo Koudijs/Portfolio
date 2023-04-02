@@ -21,6 +21,8 @@ source("helper.R")
 library(tidymodels)
 library(ggdendro)
 library(heatmaply)
+library(protoclust)
+library(cowplot)
 
 ```
 
@@ -29,11 +31,19 @@ Introduction{.storyboard}
 
 ### Is Drake the greatest Hip-Hop artist? Or just another Pop creator? 
 
+**Corpus**
+
 Drake claims he is a creator of Hip-Hop music. He is a widely known artist who scored some great hits in his career. Some people might say that, especially some of his most popular songs, are more towards the Pop genre. They say that these mainstream songs are not worth the title of Hip-Hop. When I found this opinion I started looking at some of his Top Songs. When listening to the songs, I get where the opinion comes from. This is why I would like to find out if the Top Scoring songs actually are more towards the Pop genre. 
 
-For the Portfolio I have created a playlist with about 25 of the best scoring Drake songs. A note is that some of the songs are in collaboration with another artist that might be more accepted in the Hip-Hop scene. When this is the case, it will be addressed in project. Furthermore I have found the billboard Hip-Hop top 200, and the Pop chart from ….. In this portfolio we will analyse some structures to see if Drake is a Hip-Hop or Pop artist. 
+For the Portfolio I have created a playlist with about 25 of the best scoring Drake songs. A note is that some of the songs are in collaboration with another artist that might be more accepted in the Hip-Hop scene. When this is the case, it will be addressed in project. Furthermore I have found the billboard Hip-Hop top 200, and the Pop chart from 2022. In this portfolio we will analyse some structures to see if Drake is a Hip-Hop or Pop artist. 
+
+**Outliers**
+
+One of the most popular and controversial songs of my Corpus is "Passionfruit". You are able to listen to the song in the sidebar on the right. This songs, in my opinion, is close to the pop genre, and i would like to look into this song specifically. Furthermore the tempo of the song "SICKO MODE" by drake and 21 Savage is really interesting. I will also cover this later in the portfolio. 
 
 ***
+<iframe src="https://open.spotify.com/embed/playlist/4xnBi0S21rFHhhK0iGHpiS?utm_source=generator" width="100%" height="380" frameBorder="0" allowfullscreen="" allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture"></iframe>
+
 <iframe style="border-radius:12px" src="https://open.spotify.com/embed/playlist/7dl2AkcjDVWdVxwCH2QAWV?utm_source=generator" width="100%" height="352" frameBorder="0" allowfullscreen="" allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture" loading="lazy"></iframe>
 
 
@@ -41,7 +51,7 @@ Corpus comparison {.storyboard}
 =====================================
 
 
-### Mode, Valence and Energy
+### Mode, Danceability and Energy -- Hiphop
 
 ```{r}
 
@@ -54,24 +64,25 @@ hiphopdrake <-
     HipHopchart |> mutate(category = "HipHop")
   )
                                 
-hiphopdrake |>                    # Start with awards.
+drakeplot <- hiphopdrake |>                    # Start with awards.
   mutate(
     mode = ifelse(mode == 0, "Minor", "Major")
   ) |>
   
   ggplot(                     # Set up the plot.
     aes(
-      x = valence,
+      x = danceability,
       y = energy,
       size = loudness,
-      colour = mode
+      colour = mode,
+      label = track.name
     )
   ) +
   geom_point() +              # Scatter plot.
   geom_rug(linewidth = 0.1) + # Add 'fringes' to show data distribution.
   geom_text(                  # Add text labels from above.
     aes(
-      x = valence,
+      x = danceability,
       y = energy,
       label = label
     ),
@@ -79,7 +90,7 @@ hiphopdrake |>                    # Start with awards.
       tibble(
         label = c("Altijd wel iemand", "ENERGY"),
         category = c("TopSongs", "HipHop"),
-        valence = c(0.090, 0.123),
+        danceability = c(0.090, 0.123),
         energy = c(0.101, 0.967)
       ),
     colour = "black",         # Override colour (not mode here).
@@ -110,59 +121,180 @@ hiphopdrake |>                    # Start with awards.
   ) +
   theme_light() +             # Use a simpler theme.
   labs(                       # Make the titles nice.
-    x = "Valence",
+    x = "Danceability",
     y = "Energy",
     colour = "Mode"
   )
+
+ggplotly(drakeplot)
 ```
 
+***
+In this graph we can see the mode, Danceability and Energy of the Hip-Hop charts on the right, and the Top Songs of drake on the right side. We can see that the danceability is above 0.5 for both playlists. So we could say that the danceability for drake does not differ from Hip-Hop music. Danceability is based on tempo, rhythm stability, beat strength, and overall regularity. 
 
+Another interesting thing to see is that the Energy is also in the higher quadrant for the Hip-Hop music. This feature is based on tracks feeling fast, loud an noisy. 
 
-### Started from the bottom 
+We can see that the drake songs score more around the middle at 0.5 except from two outliers. Actually, some of the lower scoring songs from the Hip-Hop chart, are made by Drake. What does this say about Drake? 
+
+On the next page we will compare the Pop charts with drake’s top songs. 
+
+### Mode, Danceability and Energy -- Pop
+
 ```{r}
 
+Topsongsdrake <- get_playlist_audio_features("", "7dl2AkcjDVWdVxwCH2QAWV")
+Popchart <- get_playlist_audio_features("", "1eKpGEx2H4cB6DBs34obeR")
 
-Started <-
-  get_tidy_audio_analysis("3dgQqOiQ9fCKVhNOedd2lf") |> # Change URI.
-  compmus_align(bars, segments) |>                     # Change `bars`
-  select(bars) |>                                      #   in all three
-  unnest(bars) |>                                      #   of these lines.
-  mutate(
-    pitches =
-      map(segments,
-          compmus_summarise, pitches,
-          method = "rms", norm = "euclidean"              # Change summary & norm.
-      )
-  ) |>
-  mutate(
-    timbre =
-      map(segments,
-          compmus_summarise, timbre,
-          method = "rms", norm = "euclidean"              # Change summary & norm.
-      )
+Popdrake <-
+  bind_rows(
+    Topsongsdrake |> mutate(category = "TopSongs"),
+    Popchart |> mutate(category = "Pop")
   )
-
-Started|>
-  compmus_gather_timbre() |>
-  ggplot(
+                                
+Popplot <- Popdrake |>                    # Start with awards.
+  mutate(
+    mode = ifelse(mode == 0, "Minor", "Major")
+  ) |>
+  
+  ggplot(                     # Set up the plot.
     aes(
-      x = start + duration / 2,
-      width = duration,
-      y = basis,
-      fill = value
+      x = danceability,
+      y = energy,
+      size = loudness,
+      colour = mode,
+      label = track.name
     )
   ) +
-  geom_tile() + ggtitle("Started from the bottom Cepstrogram") +
-  labs(x = "Time (s)", y = NULL, fill = "Magnitude") +
-  scale_fill_viridis_c() +                              
-  theme_classic()
+  geom_point() +              # Scatter plot.
+  geom_rug(linewidth = 0.1) + # Add 'fringes' to show data distribution.
+  geom_text(                  # Add text labels from above.
+    aes(
+      x = danceability,
+      y = energy,
+      label = label
+    ),
+    data = 
+      tibble(
+        label = c("Altijd wel iemand", "ENERGY"),
+        category = c("TopSongs", "Pop"),
+        danceability = c(0.090, 0.123),
+        energy = c(0.101, 0.967)
+      ),
+    colour = "black",         # Override colour (not mode here).
+    size = 3,                 # Override size (not loudness here).
+    hjust = "left",           # Align left side of label with the point.
+    vjust = "bottom",         # Align bottom of label with the point.
+    nudge_x = -0.05,          # Nudge the label slightly left.
+    nudge_y = 0.02            # Nudge the label slightly up.
+  ) +
+  facet_wrap(~ category) +    # Separate charts per playlist.
+  scale_x_continuous(         # Fine-tune the x axis.
+    limits = c(0, 1),
+    breaks = c(0, 0.50, 1),   # Use grid-lines for quadrants only.
+    minor_breaks = NULL       # Remove 'minor' grid-lines.
+  ) +
+  scale_y_continuous(         # Fine-tune the y axis in the same way.
+    limits = c(0, 1),
+    breaks = c(0, 0.50, 1),
+    minor_breaks = NULL
+  ) +
+  scale_colour_brewer(        # Use the Color Brewer to choose a palette.
+    type = "qual",            # Qualitative set.
+    palette = "Paired"        # Name of the palette is 'Paired'.
+  ) +
+  scale_size_continuous(      # Fine-tune the sizes of each point.
+    trans = "exp",            # Use an exp transformation to emphasise loud.
+    guide = "none"            # Remove the legend for size.
+  ) +
+  theme_light() +             # Use a simpler theme.
+  labs(                       # Make the titles nice.
+    x = "Danceability",
+    y = "Energy",
+    colour = "Mode"
+  )
+ggplotly(Popplot)
+```
 
+***
+As we can see here, the Pop songs are a little more spread out than the Hip-Hop songs. But still, scoring pretty high on both energy and danceability. There are some more outliers that score lower on danceability, but have higher loudness. Does this have some correlation? 
+
+It is hard to conclude anything with these graphs, but it is interesting to see that drake scores ‘average’ on Energy. 
+
+
+### Hip-Hop or Pop? 
+
+```{r}
+DrakeTop <-
+  get_playlist_audio_features(
+    "",
+    "7dl2AkcjDVWdVxwCH2QAWV"
+  ) |>
+  slice(1:25) |>
+  add_audio_analysis()
+RapCaviar <-
+  get_playlist_audio_features(
+    "",
+    "37i9dQZF1DX0XUsuxWHRQd"
+  ) |>
+  slice(1:25) |>
+  add_audio_analysis()
+Popchart <-
+  get_playlist_audio_features(
+    "",
+    "1eKpGEx2H4cB6DBs34obeR"
+  ) |>
+  slice(1:25) |>
+  add_audio_analysis()
+
+DrakeCaviar <-
+  DrakeTop |>
+  mutate(Category = "Drake Top Songs") |>
+  bind_rows(RapCaviar |> mutate(Category = "Hip hop Charts"), Popchart |> mutate(Category = "Pop Charts"))
+
+
+DrakeCaviar |>
+  mutate(
+    sections =
+      map(
+        sections,                                    # sections or segments
+        summarise_at,
+        vars(tempo, loudness, duration),             # features of interest
+        list(section_mean = mean, section_sd = sd)   # aggregation functions
+      )
+  ) |>
+  unnest(sections) |>
+  ggplot(
+    aes(
+      x = tempo,
+      y = tempo_section_sd,
+      colour = Category,
+      alpha = loudness
+    )
+  ) +
+  geom_point(aes(size = duration / 60)) +
+  geom_rug() +
+  theme_minimal() +
+  ylim(0, 5) +
+  labs(
+    x = "Mean Tempo (bpm)",
+    y = "SD Tempo",
+    colour = "Category",
+    size = "Duration (min)",
+    alpha = "Volume (dBFS)"
+  )
 
 
 ```
 
+***
+In this graph we compare tempo, loudness and duration in sections. Because it takes a lot of time to load the data from the corpus for this comparison, i only used 25 songs per category. I compared the top 25 songs of drake, with 25 songs from the Hip-hop charts, and 25 songs from the pop charts. It stands out that a lot of drake songs have low Mean Tempo. Might that be a trademark for drake? Compared to the pop songs, which are more evenly spread, this is interesting to see. 
+
+Another interesting thing to see is that almost all drake's songs have a high duration. Most of them score 4 minutes or over. Compared to both Hip-Hop and Pop, this is long. 
+
+
+
 Chromagrams {.storyboard}
-=====================================
+========================================
 
 ### Passionfruit
 ```{r}
@@ -186,8 +318,11 @@ Passionfruit |>
   geom_tile() + ggtitle("Passionfruit - chromagram") +
   labs(x = "Time (s)", y = NULL, fill = "Magnitude") +
   theme_minimal() +
-  scale_fill_viridis_c()
+  scale_fill_viridis_c(option = "E")
 ```
+
+*** 
+This chromagram clearly shows the structure of the song. I would highly recommend to listen to the song at least once. You imeadiately hear the classic alternating progression that is clearly visible in this graph. This repeats throughout the entire song exept from one "Break" in the middle 
 
 ### Started from the bottom
 ```{r}
@@ -211,11 +346,13 @@ Started1 |>
   geom_tile() + ggtitle("Started from the bottom - chromagram") +
   labs(x = "Time (s)", y = NULL, fill = "Magnitude") +
   theme_minimal() +
-  scale_fill_viridis_c()
+  scale_fill_viridis_c(option = "E")
 ```
 
-### Explanation
+***
+As we can see in our chromagram, the song starts in A# but after the intro alternates to C#, This is clearly heard in the song. There are some parts just before 100 and 150 seconds where the chromagram shifts towards A. These moments can be marked with the bass just leaving the song for a little while. Why this concludes into a shift to A is hard to understand. 
 
+From the chromagrams we can see they are fairly different. But we can't really conclude anything from this. 
 
 Cepstrograms {.storyboard}
 =====================================
@@ -257,7 +394,7 @@ passion |>
   ) +
   geom_tile() + ggtitle("Passionfruit Cepstrogram") +
   labs(x = "Time (s)", y = NULL, fill = "Magnitude") +
-  scale_fill_viridis_c() +                              
+  scale_fill_viridis_c(option = "E") +                              
   theme_classic()
 
 
@@ -265,7 +402,9 @@ passion |>
 ```
 
 ***
-Just adding some text to see what it looks like in the storyboard
+Not only the chroma features, but also timbre features are really interesting to whatch. For this analysis we will use the songs "Passionfruit", "Flowers" and "Started from the bottom". Just to see some differences. Why these songs are used will be covered later in the Report. 
+
+The Cepstrogram shown here has a really clear switch between c02 and c03. When you listen to the song it is easy to get why this shows up. When c03 is shown, the snare drums are included in the song. When it drops back to c02 again, the drums have fade away. This is so predictable and some sort of the backbone of this song in my opinion, that I understand why this song became one of Drake's most listened songs ever. 
 
 ### Started from the bottom 
 ```{r}
@@ -303,14 +442,64 @@ Started|>
   ) +
   geom_tile() + ggtitle("Started from the bottom Cepstrogram") +
   labs(x = "Time (s)", y = NULL, fill = "Magnitude") +
-  scale_fill_viridis_c() +                              
+  scale_fill_viridis_c(option = "E") +                              
   theme_classic()
 
 
 
 ```
 
+***
 
+For this song i don't have to much to say. The intro is shown at the higher magnitude in c03 in the first 20 seconds, after that the repeated beat from the song kicks in. This is the most obvious timbre feature in the entire song. We can see some other differences troughout the other song, but these are most likely due to different intruments playing together. 
+
+### Started from the bottom 
+```{r}
+
+
+StartedFlo <-
+  get_tidy_audio_analysis("0yLdNVWF3Srea0uzk55zFn") |> # Change URI.
+  compmus_align(beats, segments) |>                     # Change `bars`
+  select(beats) |>                                      #   in all three
+  unnest(beats) |>                                      #   of these lines.
+  mutate(
+    pitches =
+      map(segments,
+          compmus_summarise, pitches,
+          method = "rms", norm = "euclidean"              # Change summary & norm.
+      )
+  ) |>
+  mutate(
+    timbre =
+      map(segments,
+          compmus_summarise, timbre,
+          method = "rms", norm = "euclidean"              # Change summary & norm.
+      )
+  )
+
+StartedFlo |>
+  compmus_gather_timbre() |>
+  ggplot(
+    aes(
+      x = start + duration / 2,
+      width = duration,
+      y = basis,
+      fill = value
+    )
+  ) +
+  geom_tile() + ggtitle("Flowers Cepstrogram") +
+  labs(x = "Time (s)", y = NULL, fill = "Magnitude") +
+  scale_fill_viridis_c(option = "E") +                              
+  theme_classic()
+
+
+
+```
+
+***
+I choose to include this pop song because i wanted to compare a famous "pop" song on timbre. As i expected, this is a much more complex graph. More instruments are used and it is harder to find specific changes in the song. 
+
+For this Cepstrogram the Beats mearsure was used instead of Bars, This gave a little more detail, but it was still hard to find specific changes. 
 
 Keys and Chords {.storyboard}
 =====================================
@@ -429,7 +618,7 @@ PassionChords |>
     aes(x = start + duration / 2, width = duration, y = name, fill = d)
   ) +
   geom_tile() +
-  scale_fill_viridis_c(guide = "none") +
+  scale_fill_viridis_c(option = "E", guide = "none") +
   theme_minimal() +
   labs(x = "Time (s)", y = "")
 
@@ -552,7 +741,7 @@ RockstarChords |>
     aes(x = start + duration / 2, width = duration, y = name, fill = d)
   ) +
   geom_tile() +
-  scale_fill_viridis_c(guide = "none") +
+  scale_fill_viridis_c(option ="E",guide = "none") +
   theme_minimal() +
   labs(x = "Time (s)", y = "")
 
@@ -677,7 +866,7 @@ FlowersChords |>
     aes(x = start + duration / 2, width = duration, y = name, fill = d)
   ) +
   geom_tile() +
-  scale_fill_viridis_c(guide = "none") +
+  scale_fill_viridis_c(option = "E", guide = "none") +
   theme_minimal() +
   labs(x = "Time (s)", y = "")
 
@@ -686,80 +875,6 @@ FlowersChords |>
 ***
 
 In this graph we can see that the song 'Flowers' has ocurences of the chords D7, A7, E7. We can also see some color change at G7 and C7. This differs quite a bit from "Passionfruit" and "Rockstar". The only overlapping chord we can find is A7. Another interesting feature of this song is that all the cords are seventh chords. This means that it are all triads with an added note forming an interval of a seventh above the cords root. 
-
-
-Hip-hop or pop {.storyboard}
-=====================================
-
-### Tempo, Duration and Volume 
-
-```{r}
-DrakeTop <-
-  get_playlist_audio_features(
-    "",
-    "7dl2AkcjDVWdVxwCH2QAWV"
-  ) |>
-  slice(1:25) |>
-  add_audio_analysis()
-RapCaviar <-
-  get_playlist_audio_features(
-    "",
-    "37i9dQZF1DX0XUsuxWHRQd"
-  ) |>
-  slice(1:25) |>
-  add_audio_analysis()
-Popchart <-
-  get_playlist_audio_features(
-    "",
-    "1eKpGEx2H4cB6DBs34obeR"
-  ) |>
-  slice(1:25) |>
-  add_audio_analysis()
-
-DrakeCaviar <-
-  DrakeTop |>
-  mutate(Category = "Drake Top Songs") |>
-  bind_rows(RapCaviar |> mutate(Category = "Hip hop Charts"), Popchart |> mutate(Category = "Pop Charts"))
-
-
-DrakeCaviar |>
-  mutate(
-    sections =
-      map(
-        sections,                                    # sections or segments
-        summarise_at,
-        vars(tempo, loudness, duration),             # features of interest
-        list(section_mean = mean, section_sd = sd)   # aggregation functions
-      )
-  ) |>
-  unnest(sections) |>
-  ggplot(
-    aes(
-      x = tempo,
-      y = tempo_section_sd,
-      colour = Category,
-      alpha = loudness
-    )
-  ) +
-  geom_point(aes(size = duration / 60)) +
-  geom_rug() +
-  theme_minimal() +
-  ylim(0, 5) +
-  labs(
-    x = "Mean Tempo (bpm)",
-    y = "SD Tempo",
-    colour = "Category",
-    size = "Duration (min)",
-    alpha = "Volume (dBFS)"
-  )
-
-
-```
-
-***
-In this graph we compare tempo, loudness and duration in sections. Because it takes a lot of time to load the data from the corpus for this comparison, i only used 25 songs per category. I compared the top 25 songs of drake, with 25 songs from the Hip-hop charts, and 25 songs from the pop charts. It stands out that a lot of drake songs have low Mean Tempo. Might that be a trademark for drake? Another interesting finding is that some songs in the Hip-Hop chart score pretty high on the SD Tempo. Where a lot of the top drake songs score more like the songs in the pop chart. 
-
-This might be a little fast to conclude due to the little sample size. For my final portfolio i would like to plot this graph with some more data. 
 
 
 Tempo {.storyboard}
@@ -780,7 +895,6 @@ SICKO MODE is a songs by drake and Travis Scot. This is a great example of a son
 
 At the beginning of the song the tempo estimation is having a hard time, this is due to only being vocals where the onset is not that easy to find. The estimation varies a little but eventually the beat kicks in and settles at 300BPM. 
 
-(For my peers. The BPM is estimated at 300BPM. That seems a little high to me. If you listen to the song there is a high-hat played at what i think is 16th notes. Is this the reason that it settles at 300?  )
 
 Clustering{.storyboard}
 ======================================
@@ -865,3 +979,12 @@ heatmaply(
 This is the heatmap of the clusters found by the clustering method. As we can see, the clusters are really not that obvious. Only one single outlier really pops out. Ones again it is our beloved Passionfruit. This seems to be the only song that scores really high on instrumentalness. This seems reasonable when we listen to the song, it really differs from the "basic" Hip-Hop recipy of clear Bass and Snare. 
 
 We can see that the branch from "Circo Loco" up until "No Guidance" is formed by the colomn C and B. And that the final two rows might be based on Energy. But i do not think this gives that much information about my Corpus. Why? that is what i need to still find out. 
+
+Conclusion{.storyboard}
+============================================
+
+### Concluding words 
+
+What did we learn from all the different graphs we made? That Drake is an amazing artist. To be fair, I had listened to some of his songs before this course, but i accidentally found this topic for this report. I have listened to his songs a lot for the project and i think he really hits a sweet spot within the boundaries of Hip-Hop. His beats are clear, he makes some different sounds than others, but why would this not make him a Hip-Hop artist? 
+
+In my opinion the people who would like to disagree just have some issues with him being so big for the mainstream audience. It is true, his sound might be closer to some popular pop songs, but he is a great artist, so why would you hate on him for that. 
